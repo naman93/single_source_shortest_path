@@ -1,4 +1,6 @@
 import random
+import math
+from min_priority_queue import min_priority_queue
 
 #representation of the graph used is as follows
 #(Nested dictionaries)
@@ -25,7 +27,7 @@ def gen_random_graph(num_vertices=0):
         #create a nested dictionary for each vertex
         g[i] = {};
         #distance from source
-        g[i]['d'] = None
+        g[i]['d'] = math.inf
         #parent
         g[i]['p'] = None
         #create a nested dictionary under key 'n' to represent the edge weights to the neighbours
@@ -52,7 +54,7 @@ def init_graph(g, s):
     #initialize the distance of all the vertices form the source to None (to represent infinite distance)
     #set all the parent values to None
     for vertex in g:
-        g[vertex]['d'] = None
+        g[vertex]['d'] = math.inf
         g[vertex]['p'] = None
     #initialize the distance to the source from the source to zero
     g[s]['d'] = 0
@@ -135,17 +137,21 @@ def detect_cycles_and_negative_edges(g, s):
 #inputs: g - input graph, u,v - vertices of an edge
 def relax(g, u, v):
     #chek if u.d is None, then there would be no update to the d value of v
-    if (g[u]['d'] == None):
-        return
+    if (g[u]['d'] == math.inf):
+        return False
     else:
         #check if the edge we are looking for is actually present and we can relax it
-        if ((v in g[u]['n']) and (g[v]['d']==None or (g[v]['d'] > g[u]['d']+g[u]['n'][v]))):
+        if ((v in g[u]['n']) and (g[v]['d']==math.inf or (g[v]['d'] > g[u]['d']+g[u]['n'][v]))):
             g[v]['d'] = g[u]['d']+ g[u]['n'][v]
             g[v]['p'] = u
+            #edge was relaxed, return True
+            return True
+        else:
+            return False
 
 #Belman-ford algorithm to find single surce shortest paths
 #inputs: g - input graph, s - source vertex
-#TODO:add the negative cycle checking code and also eary stopping for this algorithm !
+#TODO:add the negative cycle checking code and also early stopping for this algorithm !
 def belman_ford(g, s):
     #initialize the graph for the given source
     init_graph (g, s)
@@ -168,3 +174,25 @@ def dag_shortest_path(g,s,reverse_topological_order):
         #iterate over all the adjacent vertices of vertex and relax the corresponding edges
         for adjacent_vertex in g[vertex]['n']:
             relax(g,vertex,adjacent_vertex)
+
+#Dijkstra's algorithm
+def dijkstra(g,s):
+    #initialize the graph for the given source
+    init_graph (g,s)
+    #construct a list of tuples (d vlue, vertex index)
+    vertex_lst = []
+    for vertex in g:
+        vertex_lst.append((g[vertex]['d'], vertex))
+    #build a min_priority_queue
+    queue = min_priority_queue(vertex_lst)
+    while(not queue.is_empty()):
+        #get the next vertex with mininmum value of 'd'
+        vertex = queue.remove_min()
+        #relax all outgoing vertices from vertex
+        for adjacent_vertex in g[vertex]['n']:
+            #get the original d value for the adjacent vertex
+            original_d = g[adjacent_vertex]['d']
+            edge_relaxed = relax(g, vertex, adjacent_vertex)
+            if (edge_relaxed):
+                #decrease corresponding key in the queue
+                queue.decrease_key((original_d,adjacent_vertex), g[adjacent_vertex]['d'])
