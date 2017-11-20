@@ -86,7 +86,7 @@ class min_priority_queue():
         self.lst[ind1] = self.lst[ind2]
         self.lst[ind2] = temp
 
-#test
+#basic test
 if __name__ == "__main__":
     h = min_priority_queue([(5,500),(4,400),(3,300),(2,200),(1,100)])
     h.decrease_key((5,500),0)
