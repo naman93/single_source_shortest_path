@@ -1,5 +1,6 @@
 import random
 import math
+import numpy as np
 from min_priority_queue import min_priority_queue
 
 #representation of the graph used is as follows
@@ -20,28 +21,62 @@ After running the single source shortest path algorithms, the value that maps to
 #method to generate a random graph
 #TODO: enhance random graph generation with various options
 def gen_random_graph(num_vertices=0, cycles=True, negative_edges=False, sparse=False):
-    #create a dictionary to hold the graph
+    # #create a dictionary to hold the graph
+    # g = {}
+    # #for each vertex in the graph, add the 'd', 'p' and 'n' keys and also the corresponding values
+    # #index vertices from 1
+    # for i in range(1, num_vertices+1, 1):
+    #     #create a nested dictionary for each vertex
+    #     g[i] = {};
+    #     #distance from source
+    #     g[i]['d'] = math.inf
+    #     #parent
+    #     g[i]['p'] = None
+    #     #create a nested dictionary under key 'n' to represent the edge weights to the neighbours
+    #     g[i]['n'] = {}
+    #     #number of vertices that are adjacent to vertex 'i'
+    #     #generate a random number ranging between 0 and (num_vertices-1) inclusive
+    #     num_adjacent = random.randrange(0, num_vertices)
+    #     #generate a unique list of vertices that are adjacent to 'i'
+    #     adjacent_vertices = random.sample(range(1, num_vertices+1, 1), num_adjacent)
+    #     #generate a set of weights for the edges
+    #     weights = random.sample(range(0, 10000000, 1), num_adjacent)
+    #     #add all the weights under the corresponding edges in the hash
+    #     g[i]['n'].update(zip(adjacent_vertices, weights))
+    #
+    # return g
+
+    #generate an adjacency matrix based on the type of graph required
+    if (negative_edges or sparse):
+        adj_matrix = np.random.uniform(-10000, 10000, (num_vertices, num_vertices))
+    else:
+        adj_matrix = np.random.uniform(0, 10000, (num_vertices, num_vertices))
+
+    #if we need to generate a sparse graph, set all negative weighted edges to zero
+    if(sparse):
+        for i in range(num_vertices):
+            for j in range(num_vertices):
+                if (adj_matrix[i][j] < 0):
+                    adj_matrix[i][j] = 0
+
+    #graph to be generated
     g = {}
-    #for each vertex in the graph, add the 'd', 'p' and 'n' keys and also the corresponding values
-    #index vertices from 1
-    for i in range(1, num_vertices+1, 1):
-        #create a nested dictionary for each vertex
-        g[i] = {};
-        #distance from source
-        g[i]['d'] = math.inf
-        #parent
-        g[i]['p'] = None
-        #create a nested dictionary under key 'n' to represent the edge weights to the neighbours
-        g[i]['n'] = {}
-        #number of vertices that are adjacent to vertex 'i'
-        #generate a random number ranging between 0 and (num_vertices-1) inclusive
-        num_adjacent = random.randrange(0, num_vertices)
-        #generate a unique list of vertices that are adjacent to 'i'
-        adjacent_vertices = random.sample(range(1, num_vertices+1, 1), num_adjacent)
-        #generate a set of weights for the edges
-        weights = random.sample(range(0, 10000000, 1), num_adjacent)
-        #add all the weights under the corresponding edges in the hash
-        g[i]['n'].update(zip(adjacent_vertices, weights))
+
+    #populate g based on the type of graph
+    if (cycles):
+        for i in range(num_vertices):
+            g[i+1] = {'d':math.inf, 'p':None, 'n':{}}
+            for j in range(num_vertices):
+                if (adj_matrix[i][j] != 0):
+                    g[i+1]['n'][j+1] = int(adj_matrix[i][j])
+    else:
+        #cycles are not allowed
+        for i in range(num_vertices):
+            g[i+1] = {'d':math.inf, 'p':None, 'n':{}}
+            #consider only the right upper triangular portion of adjacency matrix (exclude diagonal elements as well)
+            for j in range(i+1, num_vertices, 1):
+                if (adj_matrix[i][j] != 0):
+                    g[i+1]['n'][j+1] = int(adj_matrix[i][j])
 
     return g
 
