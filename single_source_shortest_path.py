@@ -18,7 +18,8 @@ After running the single source shortest path algorithms, the value that maps to
 '''
 
 #method to generate a random graph
-def gen_random_graph(num_vertices=0):
+#TODO: enhance random graph generation with various options
+def gen_random_graph(num_vertices=0, cycles=True, negative_edges=False, sparse=False):
     #create a dictionary to hold the graph
     g = {}
     #for each vertex in the graph, add the 'd', 'p' and 'n' keys and also the corresponding values
@@ -151,8 +152,7 @@ def relax(g, u, v):
 
 #Belman-ford algorithm to find single surce shortest paths
 #inputs: g - input graph, s - source vertex
-#TODO:add the negative cycle checking code and also early stopping for this algorithm !
-def belman_ford(g, s):
+def bellman_ford(g, s):
     #initialize the graph for the given source
     init_graph (g, s)
     #compute the number of vertices in the graph
@@ -160,8 +160,26 @@ def belman_ford(g, s):
     #relax all edges of the graph |V|-1 number of times
     for i in range(num_vertices-1):
         for u in g:
+            #variable to track the number of relaxations that were preformed
+            num_relaxations = 0
             for v in g[u]['n']:
-                relax(g,u,v)
+                ret_val = relax(g,u,v)
+                if (ret_val):
+                    num_relaxations += 1
+        #if no relaxations were performed in this iteration over all edges, stop prematurely
+        if (num_relaxations == 0):
+            break
+    #check if there are negative cycles in the graph
+    ret_val = True
+    #iterate over all edges and check if any edge can be relaxed further
+    for vertex in g:
+        for adjacent_vertex in g[vertex]['n']:
+            if (g[adjacent_vertex]['d'] > (g[vertex]['d'] + g[vertex]['n'][adjacent_vertex])):
+                #negative cycle detected
+                #return False prematurely
+                ret_val = False
+                return ret_val
+    return ret_val
 
 #DAG shortest path algorithm
 #inputs - input graph (g), source vertex (s), reverse_topological_order of vertices in the graph
@@ -196,3 +214,28 @@ def dijkstra(g,s):
             if (edge_relaxed):
                 #decrease corresponding key in the queue
                 queue.decrease_key((original_d,adjacent_vertex), g[adjacent_vertex]['d'])
+
+#function that decides which single source shortest path algorithm to call
+#inputs: g - input graph, s - source vertex
+#return: True (shortest paths were determined), False (shortest paths cannot be determined - negative weight cycles present)
+def single_source_shortest_path(g,s):
+    #return value
+    #indicates whether there exists a shortest path from source to reachable vertices or not
+    #in the case that negative weight cycles are present, this will be False
+    #detected by bellman ford algorithm
+    ret_val = True
+    #determine if cycles or negative edges are present
+    cycle_present, negative_edge_present, reverse_topological_order = detect_cycles_and_negative_edges(g,s)
+    #if neither cycle nor negative edges are present, call DAG shortest path
+    if ((not cycle_present) and (not negative_edge_present)):
+        dag_shortest_path(g,s,reverse_topological_order)
+    #if there are cycles and no negative edges call Dijkstra's algorithm
+    elif (cycle_present and (not negative_edge_present)):
+        dijkstra(g,s)
+    #if there is no cycle and there are negative edges, call DAG shortest path
+    elif ((not cycle_present) and negative_edge_present):
+        dag_shortest_path(g,s,reverse_topological_order)
+    #when both cycle and negative edge is present, call Bellman Ford algorithm
+    else:
+        ret_val = bellman_ford(g,s)
+    return ret_val
