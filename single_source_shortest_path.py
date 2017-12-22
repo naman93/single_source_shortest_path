@@ -3,9 +3,8 @@ import math
 import numpy as np
 from min_priority_queue import min_priority_queue
 
-#representation of the graph used is as follows
-#(Nested dictionaries)
 '''
+The following implementation makes use of Nested Dictionaries to represent a graph
 In the top level dictionary, each key represents a vertex in the graph.
 The corresponding value is a dictionary with three keys ('d', 'p', 'n')
 Value corresponding to 'd' represents an integer value of the distance of the given vertex from the soruce
@@ -18,64 +17,39 @@ corresponding edge weights are 1 and 3 respectively.
 After running the single source shortest path algorithms, the value that maps to key 'd' will have the value of the shortest path from source.
 '''
 
-#method to generate a random graph
-#TODO: enhance random graph generation with various options
+#method to generate a graph having desired properties and random weights
 def gen_random_graph(num_vertices=0, cycles=True, negative_edges=False, sparse=False):
-    # #create a dictionary to hold the graph
-    # g = {}
-    # #for each vertex in the graph, add the 'd', 'p' and 'n' keys and also the corresponding values
-    # #index vertices from 1
-    # for i in range(1, num_vertices+1, 1):
-    #     #create a nested dictionary for each vertex
-    #     g[i] = {};
-    #     #distance from source
-    #     g[i]['d'] = math.inf
-    #     #parent
-    #     g[i]['p'] = None
-    #     #create a nested dictionary under key 'n' to represent the edge weights to the neighbours
-    #     g[i]['n'] = {}
-    #     #number of vertices that are adjacent to vertex 'i'
-    #     #generate a random number ranging between 0 and (num_vertices-1) inclusive
-    #     num_adjacent = random.randrange(0, num_vertices)
-    #     #generate a unique list of vertices that are adjacent to 'i'
-    #     adjacent_vertices = random.sample(range(1, num_vertices+1, 1), num_adjacent)
-    #     #generate a set of weights for the edges
-    #     weights = random.sample(range(0, 10000000, 1), num_adjacent)
-    #     #add all the weights under the corresponding edges in the hash
-    #     g[i]['n'].update(zip(adjacent_vertices, weights))
-    #
-    # return g
+    #graph to be generated
+    g = {}
 
     #generate an adjacency matrix based on the type of graph required
-    if (negative_edges or sparse):
+    if (negative_edges):
         adj_matrix = np.random.uniform(-10000, 10000, (num_vertices, num_vertices))
     else:
         adj_matrix = np.random.uniform(0, 10000, (num_vertices, num_vertices))
 
-    #if we need to generate a sparse graph, set all negative weighted edges to zero
+    #if we need a sparse graph, set approximately half of the weights to infinity (edge does not exist)
     if(sparse):
         for i in range(num_vertices):
             for j in range(num_vertices):
-                if (adj_matrix[i][j] < 0):
-                    adj_matrix[i][j] = 0
-
-    #graph to be generated
-    g = {}
+                #set approximately half the weights in the adjacency matrix to math.inf
+                if ((i+j)%2 == 0):
+                    adj_matrix[i][j] = math.inf
 
     #populate g based on the type of graph
     if (cycles):
         for i in range(num_vertices):
             g[i+1] = {'d':math.inf, 'p':None, 'n':{}}
             for j in range(num_vertices):
-                if (adj_matrix[i][j] != 0):
+                if (adj_matrix[i][j] != math.inf):
                     g[i+1]['n'][j+1] = int(adj_matrix[i][j])
     else:
         #cycles are not allowed
         for i in range(num_vertices):
             g[i+1] = {'d':math.inf, 'p':None, 'n':{}}
-            #consider only the right upper triangular portion of adjacency matrix (exclude diagonal elements as well)
+            #consider only the upper triangular portion of adjacency matrix (exclude diagonal elements as well)
             for j in range(i+1, num_vertices, 1):
-                if (adj_matrix[i][j] != 0):
+                if (adj_matrix[i][j] != math.inf):
                     g[i+1]['n'][j+1] = int(adj_matrix[i][j])
 
     return g
@@ -87,8 +61,8 @@ def init_graph(g, s):
     if (s not in g):
         print ('Cannot initialize the graph, vertex ' + str(s) + 'is not present in the graph')
         exit()
-    #initialize the distance of all the vertices form the source to None (to represent infinite distance)
-    #set all the parent values to None
+    #initialize the distance of all vertices form the source to math.inf (to represent infinite distance - no path exists or path not found)
+    #set all the parent vertex values to None
     for vertex in g:
         g[vertex]['d'] = math.inf
         g[vertex]['p'] = None
@@ -102,7 +76,7 @@ def detect_cycles_and_negative_edges(g, s):
     #check if the source vertex is a valid vertex present in the graph
     if (s not in g):
         return (None, None, None)
-    #boolean variables (will be returned by the functino)
+    #boolean variables (to be returned by the function)
     cycle_present = False
     negative_edge_present = False
     #check for presence of negative edges
@@ -185,7 +159,7 @@ def relax(g, u, v):
         else:
             return False
 
-#Belman-ford algorithm to find single surce shortest paths
+#Bellman-ford algorithm to find single surce shortest paths
 #inputs: g - input graph, s - source vertex
 def bellman_ford(g, s):
     #initialize the graph for the given source
@@ -202,8 +176,8 @@ def bellman_ford(g, s):
                 if (ret_val):
                     num_relaxations += 1
         #if no relaxations were performed in this iteration over all edges, stop prematurely
-        if (num_relaxations == 0):
-            break
+        # if (num_relaxations == 0):
+        #     break
     #check if there are negative cycles in the graph
     ret_val = True
     #iterate over all edges and check if any edge can be relaxed further
@@ -218,7 +192,7 @@ def bellman_ford(g, s):
 
 #DAG shortest path algorithm
 #inputs - input graph (g), source vertex (s), reverse_topological_order of vertices in the graph
-def dag_shortest_path(g,s,reverse_topological_order):
+def dag_shortest_path(g, s, reverse_topological_order):
     #initialize the graph for the given source
     init_graph (g,s)
     #iterate over the vertices in the reverse_topological_order in reverse order
